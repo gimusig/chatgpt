@@ -4,9 +4,9 @@ import os
 
 def generate_transcription(files):
     # 오디오 파일의 경로 또는 파일 객체를 `file` 인자로 전달
-    transcription = openai.audio.translations.create(
+    transcription = openai.audio.transcriptions.create(
         model="whisper-1",
-        file=files
+        file=files,
     )
     return transcription
 
@@ -14,7 +14,7 @@ def generate_trans(script):
     completion = openai.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": "한글을 영어로 번역하고, 영어로 출력해줘"},
+            {"role": "system", "content": f"한국어(한글)을 {language1}로 번역하고, {language1}로 출력해줘"},
             {"role": "user", "content": script}
         ]
     )
@@ -40,13 +40,16 @@ with st.sidebar:
     value=''
     apikey = st.text_input(label='OPENAI API 키', placeholder='OPENAI API키를 입력해 주세요', value=value)
 
-    if apikey:
-        st.markdown(f'OPENAI API KEY: `{apikey}`')
+    
+    button = st.button('확인')
 
-    st.markdown('---')
-
-
-    openai.api_key = apikey
+    if button:
+        if apikey != "" : 
+            st.markdown(f'OPENAI API KEY: `{apikey}`')
+            openai.api_key = apikey
+        else : 
+            st.markdown('OPENAI API KEY를 입력해주세요')    
+  
 
 
 # 윗 단 탭을 만들어서, 가능한것들을 다 만들어줘
@@ -57,9 +60,19 @@ with tab1 :
     st.title('음성 번역기')
 
     col1, col2, col3 = st.columns(3)
+    with col1 : 
+        # 선택 박스
+        row_language = st.selectbox(
+            '음성 파일 언어를 선택해 주세요',
+            ('한국어', '영어', '중국어', '일본어'), 
+            index=None,
+            placeholder='Select contact language'
+        )
+
+
     with col3 : 
         # 선택 박스
-        language = st.selectbox(
+        language1 = st.selectbox(
             '번역을 원하는 언어를 선택해 주세요',
             ('한국어', '영어', '중국어', '일본어'), 
             index=None,
@@ -86,21 +99,23 @@ with tab1 :
         with open('uploaded_file.wav', 'rb') as audio_file:
             transcript = generate_transcription(audio_file)
             transcript = transcript.text
+
+            st.divider() 
+            st.write(" ")
+            st.write(f"음성 텍스트: {transcript}")
+
             completion = generate_trans(transcript)
             completion = completion.choices[0].message.content
+
+            st.divider() 
+            st.write(" ")
+            st.write(f"한글 -> {language1} 변환기 : {completion}")
+
             audio_test = generate_audio(completion)
             
             speech_file_path = "speech_output.mp3"
             with open(speech_file_path, "wb") as audio_file:
                 audio_file.write(audio_test.content)  # 응답 내용을 파일에 씁니다.
-            
-            st.divider() 
-            st.write(" ")
-            st.write(f"음성 텍스트: {transcript}", )
-            
-            st.divider() 
-            st.write(" ")
-            st.write(f"한글 -> 영어 변환기 : {completion}", )
 
             st.divider() 
             st.write(" ")
