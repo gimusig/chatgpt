@@ -2,10 +2,11 @@ import streamlit as st
 import openai
 import os
 
-def generate_transcription(files):
+def generate_transcription(files, row_language):
     # 오디오 파일의 경로 또는 파일 객체를 `file` 인자로 전달
     transcription = openai.audio.transcriptions.create(
         model="whisper-1",
+        language=row_language,
         file=files,
     )
     return transcription
@@ -15,8 +16,9 @@ def generate_trans(script):
         model="gpt-4o",
         messages=[
             {"role": "system", "content": """
-             f"한국어(한글)을 {language1}로 번역하고, {language1}로 출력해줘"
-             만약, 번역이 가능한 언어가 없으면, 번역이 불가능합니다라고 출력해줘
+             f"{row_language}을 {language1}로 번역하고, {language1}로 출력해줘
+             설명은 제외하고, 번역 문구만 답변해줘
+             만약, 번역이 가능한 언어가 없으면, 번역이 불가능합니다라고 출력해줘"
              """},
             {"role": "user", "content": script}
         ]
@@ -71,7 +73,7 @@ with tab1 :
         # 선택 박스
         row_language = st.selectbox(
             '음성 파일 언어를 선택해 주세요',
-            ('한국어', '영어', '중국어', '일본어'), 
+            ('ko', 'en', 'zh', 'ja'), 
             index=None,
             placeholder='Select contact language'
         )
@@ -103,8 +105,11 @@ with tab1 :
         st.write("파일이 로컬 시스템에 저장되었습니다.")
 
         # 임시 파일을 열어서 OpenAI API를 사용하여 변환
+        # row_language =
+        # ['한국어', '영어', '중국어', '일본어']
+
         with open('uploaded_file.wav', 'rb') as audio_file:
-            transcript = generate_transcription(audio_file)
+            transcript = generate_transcription(audio_file, row_language)
             transcript = transcript.text
 
             st.divider() 
@@ -116,7 +121,7 @@ with tab1 :
 
             st.divider() 
             st.write(" ")
-            st.write(f"한글 -> {language1} 변환기 : {completion}")
+            st.write(f"{row_language} -> {language1} 변환기 : {completion}")
 
             audio_test = generate_audio(completion)
             
