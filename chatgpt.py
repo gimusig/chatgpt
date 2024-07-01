@@ -14,7 +14,10 @@ def generate_trans(script):
     completion = openai.chat.completions.create(
         model="gpt-4o",
         messages=[
-            {"role": "system", "content": f"한국어(한글)을 {language1}로 번역하고, {language1}로 출력해줘"},
+            {"role": "system", "content": """
+             f"한국어(한글)을 {language1}로 번역하고, {language1}로 출력해줘"
+             만약, 번역이 가능한 언어가 없으면, 번역이 불가능합니다라고 출력해줘
+             """},
             {"role": "user", "content": script}
         ]
     )
@@ -53,11 +56,15 @@ with st.sidebar:
 
 
 # 윗 단 탭을 만들어서, 가능한것들을 다 만들어줘
-tab1, tab2, tab3 = st.tabs(['번역기', '대시보드', '운동추천']) 
+# tab1, tab2, tab3 = st.tabs(['번역기', '대시보드', '운동추천']) 
+tab1, tab2 = st.tabs(['번역기', '-']) 
 
 with tab1 : 
 # 타이틀 적용 예시
     st.title('음성 번역기')
+    st.subheader('(POC) 말하면, 번역 후 답변해주는 서비스')
+    st.text("말하는 오디오 기능은 개발이 필요한 요소로, 본 모델은 음성 파일로 대체")
+    st.text('')
 
     col1, col2, col3 = st.columns(3)
     with col1 : 
@@ -84,7 +91,7 @@ with tab1 :
 
 
     # 파일 업로드 버튼 (업로드 기능)
-    uploaded_file = st.file_uploader("파일 선택은 wav만 지원됩니다.", type=['wav'])
+    uploaded_file = st.file_uploader("파일은 wav 파일 형식만 지원됩니다.", type=['wav'])
 
     if uploaded_file is not None:
         # 업로드된 파일을 바이너리 모드로 읽기
@@ -121,13 +128,23 @@ with tab1 :
             st.write(" ")
             st.audio(speech_file_path)
 
+
     else:
         st.write("파일을 업로드 해주세요.")
 
+    st.write(" ")
+    st.divider() 
+    st.text('''
+        > 주의사항
+          - 본 서비스 번역 서비스이며, 개념 이해를 위해 만든 POC(Proof of Concept)모델임
+          - 추후 서비스 접목 시에는 세부적인 서비스 기획 모델이 필요함
+        ''')
+  
 
 
-with tab2 : 
-    st.title('대시보드 테스트')
 
-with tab3 : 
-    st.title('운동추천 테스트')
+# with tab2 : 
+#     st.title('대시보드 테스트')
+
+# with tab3 : 
+#     st.title('운동추천 테스트')
