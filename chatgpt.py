@@ -1,19 +1,19 @@
 import streamlit as st
 from streamlit.components.v1 import html
-from flask import Flask, request
+from io import BytesIO
 import os
 
 st.title("오디오 녹음기")
 
-import streamlit as st
+# Directory to save uploaded files
+UPLOAD_DIR = "uploads"
+os.makedirs(UPLOAD_DIR, exist_ok=True)
 
-st.title("Streamlit Microphone Recorder")
-
-# HTML and JavaScript for microphone recording and file upload
+# HTML and JavaScript for microphone recording
 html_code = """
 <div id="controls">
-    <button id="recordButton" style="font-size: 20px;">🔴 Record</button>
-    <button id="stopButton" style="font-size: 20px;" disabled>⬛ Stop</button>
+    <button id="recordButton" style="font-size: 12px;">🔴 Record</button>
+    <button id="stopButton" style="font-size: 12px;" disabled>⬛ Stop</button>
 </div>
 <br>
 <audio id="audioPlayback" controls></audio>
@@ -57,36 +57,34 @@ html_code = """
     });
 
     function uploadAudio(blob) {
-        const formData = new FormData();
-        formData.append('file', blob, 'recording.wav');
-        fetch('/upload', {
-            method: 'POST',
-            body: formData
-        })
-        .then(response => response.text())
-        .then(data => console.log(data))
-        .catch(error => console.error('Error:', error));
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const base64Data = event.target.result.split(',')[1];
+            const fileName = 'recording.wav';
+            fetch(`/upload?name=${fileName}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({file: base64Data})
+            })
+            .then(response => response.json())
+            .then(data => console.log(data))
+            .catch(error => console.error('Error:', error));
+        };
+        reader.readAsDataURL(blob);
     }
 </script>
 """
 
 html(html_code)
 
-
-app = Flask(__name__)
-
-UPLOAD_FOLDER = 'uploads'
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'file' not in request.files:
-        return 'No file part', 400
-    file = request.files['file']
-    if file.filename == '':
-        return 'No selected file', 400
-    file.save(os.path.join(UPLOAD_FOLDER, file.filename))
-    return 'File uploaded successfully', 200
-
-if __name__ == '__main__':
-    app.run(port=5000)
+# Handle file upload
+query_params = st.experimental_get_query_params()
+if "name" in query_params:
+    file_name = query_params["name"][0]
+    file_data = st.experimental_get_query_params()["file"][0]
+    file_bytes = BytesIO(base64.b64decode(file_data))
+    with open(os.path.join(UPLOAD_DIR, file_name), "wb") as f:
+        f.write(file_bytes.read())
+    st.success(f"File {file_name} uploaded successfully")
