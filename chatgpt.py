@@ -1,9 +1,15 @@
 import streamlit as st
 from streamlit.components.v1 import html
-import base64
+from flask import Flask, request
+import os
 
 st.title("오디오 녹음기")
 
+import streamlit as st
+
+st.title("Streamlit Microphone Recorder")
+
+# HTML and JavaScript for microphone recording and file upload
 html_code = """
 <div id="controls">
     <button id="recordButton" style="font-size: 20px;">🔴 Record</button>
@@ -31,7 +37,7 @@ html_code = """
                 audioBlob = new Blob(chunks, { type: 'audio/wav' });
                 const audioUrl = URL.createObjectURL(audioBlob);
                 audioPlayback.src = audioUrl;
-                downloadAudio(audioBlob);
+                uploadAudio(audioBlob);
                 chunks = [];
             };
             recorder.start();
@@ -50,18 +56,37 @@ html_code = """
         stopButton.disabled = true;
     });
 
-    function downloadAudio(blob) {
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.style.display = 'none';
-        a.href = url;
-        a.download = 'recording.wav';
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
+    function uploadAudio(blob) {
+        const formData = new FormData();
+        formData.append('file', blob, 'recording.wav');
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.text())
+        .then(data => console.log(data))
+        .catch(error => console.error('Error:', error));
     }
 </script>
 """
 
 html(html_code)
 
+
+app = Flask(__name__)
+
+UPLOAD_FOLDER = 'uploads'
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return 'No file part', 400
+    file = request.files['file']
+    if file.filename == '':
+        return 'No selected file', 400
+    file.save(os.path.join(UPLOAD_FOLDER, file.filename))
+    return 'File uploaded successfully', 200
+
+if __name__ == '__main__':
+    app.run(port=5000)
