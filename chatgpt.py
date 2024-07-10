@@ -81,10 +81,16 @@ html(html_code)
 
 # Handle file upload
 query_params = st.experimental_get_query_params()
+
+st.text(query_params)
 if "name" in query_params:
     file_name = query_params["name"][0]
+    st.text(file_name)
     file_data = st.experimental_get_query_params()["file"][0]
+    st.text(file_data)
     file_bytes = BytesIO(base64.b64decode(file_data))
+    st.text(file_bytes)
+    st.text(UPLOAD_DIR)
     with open(os.path.join(UPLOAD_DIR, file_name), "wb") as f:
         f.write(file_bytes.read())
     st.success(f"File {file_name} uploaded successfully")
